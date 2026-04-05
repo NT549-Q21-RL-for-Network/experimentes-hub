@@ -130,6 +130,8 @@ Flow wrapper:
 
 Khi `CUSTOMER_COUNT > 1`, wrapper sẽ tự thêm `RUN_ID` vào `CUSTOMER_EMAIL_PREFIX` để mỗi lần chạy dùng một nhóm customer riêng.
 
+Khi có seed product, wrapper cũng tự thêm `RUN_ID` vào `SEED_NAMESPACE` để seller và product seed của từng lần chạy không đụng nhau.
+
 ## Seed dữ liệu catalog
 
 Khi catalog đã hết hàng, có thể seed nhanh seller và product mới trước khi chạy tải:
