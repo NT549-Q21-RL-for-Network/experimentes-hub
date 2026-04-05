@@ -1,18 +1,15 @@
-# Load Testing repo
+# Experiments Hub
 
-Repo này chứa các scripts phục vụ việc mô phỏng tải lên hệ thống [Mini ecommerce](https://github.com/NT114-Q21-Specialized-Project/mini-ecommerce-microservices).
+Repo này gom các thành phần phục vụ thí nghiệm cho đồ án RL self-healing của hệ thống [Mini ecommerce](https://github.com/NT114-Q21-Specialized-Project/mini-ecommerce-microservices).
 
-Hiện tại repo giữ các script chính:
+Hiện tại repo giữ 2 phần chính:
 
-- `scripts-k6/user-journey.js`
-- `scripts/run-user-journey.sh`
-- `scripts/setup/*`
-- `scripts/user-service/*`
-- `scripts/product-service/*`
+- `load-testing/`
+- `chaos-mesh/`
 
-## Flow chính
+## 1. Load Testing
 
-Flow hiện tại mô phỏng một customer đơn giản:
+Phần tải hiện tại dùng một flow người dùng đơn giản:
 
 1. `setup()` login một hoặc nhiều customer trước khi bắt đầu test.
 2. Trong mỗi iteration, gọi `GET /api/v1/products` để lấy danh sách sản phẩm.
@@ -33,22 +30,22 @@ Các request đều đi qua `api-gateway`, sau đó route vào:
 - `product-service` cho `GET /api/v1/products/{id}`
 - `order-service` cho `GET /api/v1/orders`
 
-## Run script mô phỏng
+## Run Load Testing
 
 Trước khi chạy, hãy tạo file env local từ file mẫu:
 
-- `scripts-k6/.env.k6.example`
+- `load-testing/scripts-k6/.env.k6.example`
 
 Ví dụ:
 
 ```bash
-cd scripts-k6
+cd load-testing/scripts-k6
 cp .env.k6.example .env.k6
 ```
 
 Sau đó cấu hình các biến môi trường trong:
 
-- `scripts-k6/.env.k6`
+- `load-testing/scripts-k6/.env.k6`
 
 **Mục tiêu**
 
@@ -82,7 +79,7 @@ Sau đó cấu hình các biến môi trường trong:
 - **`SEED_PRODUCTS_BEFORE_RUN`**: seed thêm product trước khi chạy nếu catalog đang thiếu dữ liệu.
 - **`CLEANUP_PRODUCTS_AFTER_RUN`**: cleanup product và seller seed sau khi chạy xong.
 
-Khuyến nghị mặc định cho repo hiện tại:
+Khuyến nghị mặc định:
 
 ```text
 SEED_CUSTOMERS_BEFORE_RUN=true
@@ -100,13 +97,6 @@ CUSTOMER_EMAIL_DOMAIN=example.test
 CUSTOMER_PASSWORD=K6Read@12345
 ```
 
-Khi đó script sẽ login các user:
-
-- `k6.customer.1@example.test`
-- `k6.customer.2@example.test`
-- ...
-- `k6.customer.20@example.test`
-
 **Flow đơn giản**
 
 - **`CATALOG_PAGE_SIZE`**: số lượng sản phẩm lấy ở mỗi lần gọi list.
@@ -117,7 +107,7 @@ Khi đó script sẽ login các user:
 Chạy trọn flow một lệnh:
 
 ```bash
-cd /home/tienphatng237/Desktop/NT114-Q21-Speacialized-Project/load-testing
+cd /home/tienphatng237/Desktop/NT114-Q21-Speacialized-Project/experiments-hub/load-testing
 K6_WEB_DASHBOARD=true bash ./scripts/run-user-journey.sh
 ```
 
@@ -132,21 +122,65 @@ Khi `CUSTOMER_COUNT > 1`, wrapper sẽ tự thêm `RUN_ID` vào `CUSTOMER_EMAIL_
 
 Khi có seed product, wrapper cũng tự thêm `RUN_ID` vào `SEED_NAMESPACE` để seller và product seed của từng lần chạy không đụng nhau.
 
-## Seed dữ liệu catalog
+## Seed Dữ Liệu Catalog
 
 Khi catalog đã hết hàng, có thể seed nhanh seller và product mới trước khi chạy tải:
 
 ```bash
-bash ./scripts/product-service/seed-products.sh
+bash ./load-testing/scripts/product-service/seed-products.sh
 ```
 
 Dọn seller seed sau khi test:
 
 ```bash
-bash ./scripts/product-service/cleanup-seed-users.sh
+bash ./load-testing/scripts/product-service/cleanup-seed-users.sh
 ```
 
 Lưu ý:
 
 - cleanup sẽ xóa product seed theo tên đã tạo, rồi mới soft-delete seller seed
 - flow này giả định `product-service` đã bật CRUD `DELETE /api/v1/products/{id}`
+
+## 2. Chaos Experiments Testing
+
+Thư mục `chaos-mesh/` chứa:
+
+- `experiments/`
+  Các manifest `NetworkChaos`, `PodChaos`, và các scenario thử nghiệm khác.
+- `scripts/run-chaos.sh`
+  Runner orchestration cho `chaos only` hoặc `load + chaos`.
+- `setup/`
+  Script cài và reinstall Chaos Mesh controller.
+- `ingress.yaml`, `values-k0s.yaml`
+  Cấu hình dashboard và values cài đặt cho cluster k0s.
+- `images/`
+  Ảnh minh họa dashboard và event của Chaos Mesh.
+
+Chạy `NetworkChaos` đơn lẻ:
+
+```bash
+./chaos-mesh/scripts/run-chaos.sh network-delay-api-gateway
+```
+
+Chạy `load + network delay`:
+
+```bash
+RUN_LOAD=true K6_WEB_DASHBOARD=true ./chaos-mesh/scripts/run-chaos.sh network-delay-api-gateway
+```
+
+Cài Chaos Mesh:
+
+```bash
+./chaos-mesh/setup/install-chaos-mesh.sh
+```
+
+Clean reinstall:
+
+```bash
+./chaos-mesh/setup/reinstall-chaos-mesh.sh
+```
+
+Lưu ý:
+
+- Toàn bộ load test, chaos runtime, và setup Chaos Mesh hiện được đặt ở repo này.
+- Repo [kubernetes-hub](https://github.com/NT114-Q21-Specialized-Project/kubernetes-hub) chỉ giữ phần app và GitOps.
