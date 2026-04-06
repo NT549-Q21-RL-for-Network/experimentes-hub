@@ -9,6 +9,26 @@ Hiện tại repo giữ 2 phần chính:
 
 ## 1. Load Testing
 
+### 1.1 Install K6
+
+Cài `k6` nếu máy chưa có:
+
+```bash
+bash ./load-testing/scripts/setup/install_k6.sh
+```
+
+Gỡ `k6` sau khi không dùng nữa:
+
+```bash
+bash ./load-testing/scripts/setup/uninstall_k6.sh
+```
+
+Lưu ý:
+
+- script hiện hỗ trợ Debian/Ubuntu
+
+### 1.2 User Flow
+
 Phần tải hiện tại dùng một flow người dùng đơn giản:
 
 1. `setup()` login một hoặc nhiều customer trước khi bắt đầu test.
@@ -30,7 +50,7 @@ Các request đều đi qua `api-gateway`, sau đó route vào:
 - `product-service` cho `GET /api/v1/products/{id}`
 - `order-service` cho `GET /api/v1/orders`
 
-## Run Load Testing
+### 1.3 Configure Environment
 
 Trước khi chạy, hãy tạo file env local từ file mẫu:
 
@@ -104,6 +124,8 @@ CUSTOMER_PASSWORD=K6Read@12345
 - **`THINK_TIME_MAX`**: thời gian nghỉ tối đa giữa các bước.
 - **`REQUEST_TIMEOUT`**: timeout cho mỗi HTTP request.
 
+### 1.4 Run Full Flow
+
 Chạy trọn flow một lệnh:
 
 ```bash
@@ -122,7 +144,7 @@ Khi `CUSTOMER_COUNT > 1`, wrapper sẽ tự thêm `RUN_ID` vào `CUSTOMER_EMAIL_
 
 Khi có seed product, wrapper cũng tự thêm `RUN_ID` vào `SEED_NAMESPACE` để seller và product seed của từng lần chạy không đụng nhau.
 
-## Seed Dữ Liệu Catalog
+### 1.5 Seed Dữ Liệu Catalog
 
 Khi catalog đã hết hàng, có thể seed nhanh seller và product mới trước khi chạy tải:
 
@@ -143,6 +165,8 @@ Lưu ý:
 
 ## 2. Chaos Experiments Testing
 
+### 2.1 Chaos Mesh Module
+
 Thư mục `chaos-mesh/` chứa:
 
 - `experiments/`
@@ -156,17 +180,7 @@ Thư mục `chaos-mesh/` chứa:
 - `images/`
   Ảnh minh họa dashboard và event của Chaos Mesh.
 
-Chạy `NetworkChaos` đơn lẻ:
-
-```bash
-./chaos-mesh/scripts/run-chaos.sh network-delay-api-gateway
-```
-
-Chạy `load + network delay`:
-
-```bash
-RUN_LOAD=true K6_WEB_DASHBOARD=true ./chaos-mesh/scripts/run-chaos.sh network-delay-api-gateway
-```
+### 2.2 Install Chaos Mesh
 
 Cài Chaos Mesh:
 
@@ -178,6 +192,64 @@ Clean reinstall:
 
 ```bash
 ./chaos-mesh/setup/reinstall-chaos-mesh.sh
+```
+
+### 2.3 Configure Chaos Environment
+
+Trước khi chạy chaos, hãy tạo file env local:
+
+```bash
+cd chaos-mesh
+cp .env.chaos.example .env.chaos
+```
+
+Sau đó cấu hình các biến trong:
+
+- `chaos-mesh/.env.chaos`
+
+Các biến chính:
+
+- `KUBECONFIG`: kubeconfig của cluster muốn chạy chaos
+- `RUN_LOAD`: có chạy kèm load-testing hay không
+- `BASELINE_DURATION`: thời gian baseline trước khi bơm fault
+- `WARMUP_DURATION`: thời gian warm-up dưới tải
+- `CHAOS_DURATION`: thời gian giữ fault
+- `RECOVERY_DURATION`: thời gian quan sát recovery sau khi gỡ fault
+- `K6_WEB_DASHBOARD`: bật/tắt dashboard k6 khi chaos script tự chạy load
+- `LOAD_ENV_FILE`: file env của `load-testing` nếu muốn override đường dẫn mặc định
+
+Mặc định cho dev có thể để:
+
+```text
+KUBECONFIG=~/.kube/k0s-lab-config
+RUN_LOAD=true
+BASELINE_DURATION=20s
+WARMUP_DURATION=20s
+CHAOS_DURATION=30s
+RECOVERY_DURATION=20s
+K6_WEB_DASHBOARD=false
+```
+
+### 2.4 Run Chaos Only
+
+Chạy `NetworkChaos` đơn lẻ:
+
+```bash
+./chaos-mesh/scripts/run-chaos.sh network-delay-api-gateway
+```
+
+### 2.5 Run Load + Chaos
+
+Chạy `load + network delay`:
+
+```bash
+bash ./chaos-mesh/scripts/run-chaos.sh network-delay-api-gateway
+```
+
+Chạy `load + product crash-loop`:
+
+```bash
+bash ./chaos-mesh/scripts/run-chaos.sh product-crash-loop
 ```
 
 Lưu ý:

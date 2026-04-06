@@ -1,5 +1,8 @@
 Usage: ./run-chaos.sh <experiment-name>
 
+Default env file:
+  ./chaos-mesh/.env.chaos
+
 Supported experiments:
   product-crash-loop
   network-delay-api-gateway
@@ -7,7 +10,7 @@ Supported experiments:
   pod-kill-order
   cpu-stress-product
 
-Environment overrides:
+Environment values:
   RUN_LOAD=false
   BASELINE_DURATION=30s
   WARMUP_DURATION=60s
@@ -19,4 +22,4 @@ Environment overrides:
 
 Examples:
   ./chaos-mesh/scripts/run-chaos.sh network-delay-api-gateway
-  RUN_LOAD=true K6_WEB_DASHBOARD=true ./chaos-mesh/scripts/run-chaos.sh network-delay-api-gateway
+  ./chaos-mesh/scripts/run-chaos.sh product-crash-loop

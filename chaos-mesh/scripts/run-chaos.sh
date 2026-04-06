@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXPERIMENTS_DIR="${SCRIPT_DIR}/../experiments"
 USAGE_FILE="${SCRIPT_DIR}/run-chaos.usage.txt"
+CHAOS_ENV_FILE_DEFAULT="${REPO_DIR}/chaos-mesh/.env.chaos"
+CHAOS_ENV_FILE="${CHAOS_ENV_FILE:-${CHAOS_ENV_FILE_DEFAULT}}"
 BASELINE_DURATION="${BASELINE_DURATION:-30s}"
 WARMUP_DURATION="${WARMUP_DURATION:-60s}"
 RECOVERY_DURATION="${RECOVERY_DURATION:-60s}"
@@ -20,6 +22,19 @@ FAULT_FAMILY=""
 CLEANED_UP="false"
 LOAD_PID=""
 MANIFEST_CLEANED_UP="false"
+
+load_env_file() {
+  local env_file="$1"
+
+  if [[ ! -f "${env_file}" ]]; then
+    return 0
+  fi
+
+  set -a
+  # shellcheck disable=SC1090
+  source "${env_file}"
+  set +a
+}
 
 log() {
   printf '[chaos][%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -161,6 +176,16 @@ if [[ -z "${EXPERIMENT_NAME}" ]]; then
 fi
 
 require_cmd kubectl
+load_env_file "${CHAOS_ENV_FILE}"
+
+BASELINE_DURATION="${BASELINE_DURATION:-30s}"
+WARMUP_DURATION="${WARMUP_DURATION:-60s}"
+RECOVERY_DURATION="${RECOVERY_DURATION:-60s}"
+CHAOS_DURATION_OVERRIDE="${CHAOS_DURATION:-}"
+RUN_LOAD="${RUN_LOAD:-false}"
+LOAD_TEST_DIR="${LOAD_TEST_DIR:-${REPO_DIR}/load-testing}"
+LOAD_RUN_SCRIPT="${LOAD_RUN_SCRIPT:-${LOAD_TEST_DIR}/scripts/run-user-journey.sh}"
+LOAD_ENV_FILE="${LOAD_ENV_FILE:-${LOAD_TEST_DIR}/scripts-k6/.env.k6}"
 
 # Map logical experiment names to manifests and default durations.
 case "${EXPERIMENT_NAME}" in
@@ -211,6 +236,7 @@ log "experiment=${EXPERIMENT_NAME}"
 log "fault_family=${FAULT_FAMILY}"
 log "target_service=${TARGET_SERVICE}"
 log "manifest=${MANIFEST}"
+log "chaos_env_file=${CHAOS_ENV_FILE}"
 if bool_is_true "${RUN_LOAD}"; then
   log "traffic_source=managed-load"
 else
