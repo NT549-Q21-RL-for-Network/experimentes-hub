@@ -129,7 +129,7 @@ CUSTOMER_PASSWORD=K6Read@12345
 Chạy trọn flow một lệnh:
 
 ```bash
-cd /home/tienphatng237/Desktop/NT114-Q21-Speacialized-Project/experiments-hub/load-testing
+cd /load-testing
 K6_WEB_DASHBOARD=true bash ./scripts/run-user-journey.sh
 ```
 
