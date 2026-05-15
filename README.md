@@ -129,7 +129,7 @@ CUSTOMER_PASSWORD=K6Read@12345
 Chạy trọn flow một lệnh:
 
 ```bash
-cd /load-testing
+cd load-testing
 K6_WEB_DASHBOARD=true bash ./scripts/run-user-journey.sh
 ```
 
@@ -251,6 +251,32 @@ Chạy `load + product crash-loop`:
 ```bash
 bash ./chaos-mesh/scripts/run-chaos.sh product-crash-loop
 ```
+
+Chạy `load + chaos` với dashboard k6:
+
+```bash
+K6_WEB_DASHBOARD=true \
+K6_WEB_DASHBOARD_HOST=0.0.0.0 \
+K6_WEB_DASHBOARD_PORT=5665 \
+K6_WEB_DASHBOARD_EXPORT=artifacts/k6-dashboard-report.html \
+bash ./chaos-mesh/scripts/run-chaos.sh network-delay-api-gateway
+```
+
+Chạy `load + pod failure (product-service)` với dashboard k6:
+
+```bash
+K6_WEB_DASHBOARD=true \
+K6_WEB_DASHBOARD_HOST=0.0.0.0 \
+K6_WEB_DASHBOARD_PORT=5665 \
+K6_WEB_DASHBOARD_EXPORT=artifacts/k6-dashboard-pod-kill-product.html \
+bash ./chaos-mesh/scripts/run-chaos.sh pod-kill-product
+```
+
+Lưu ý:
+
+- dashboard realtime mở ở `http://127.0.0.1:5665` khi test đang chạy
+- report HTML dashboard sẽ được export ra `artifacts/k6-dashboard-report.html`
+- metrics dataset theo từng run vẫn được xuất trong `artifacts/chaos-network-delay-api-gateway/<run-label>/`
 
 Lưu ý:
 
